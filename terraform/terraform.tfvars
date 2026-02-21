@@ -1,1 +1,1 @@
-bucket_name = "another-s3-bucket-1242354j23509352"
+bucket_name = "yetanotherattempt-at-getting-thisright123421"
