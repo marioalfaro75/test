@@ -1,1 +1,1 @@
-bucket_name = "yetanotherattempt-at-getting-thisright123421"
+bucket_name = "yet-another-bucket-testing32409734"
