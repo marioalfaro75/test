@@ -1,1 +1,1 @@
-bucket_name = "my-test-yet-another-test-using idp-to-create-an-s3-bucket-23544"
+bucket_name = "another-s3-bucket-1242354j23509352"
