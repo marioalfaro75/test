@@ -1,2 +1,1 @@
-region = "us-east-1"
-bucket_name = "idp-test-bucket-wrapper-fix"
+bucket_name = "my-test-yet-another-test-using idp-to-create-an-s3-bucket-23544"
