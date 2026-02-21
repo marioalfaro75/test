@@ -45,6 +45,33 @@
 name: 'Terraform'
 
 on:
+  workflow_dispatch:
+    inputs:
+      template_slug:
+        description: 'template_slug'
+        required: true
+        type: string
+      template_provider:
+        description: 'template_provider'
+        required: true
+        type: string
+      variables:
+        description: 'variables'
+        required: true
+        type: string
+      deployment_id:
+        description: 'deployment_id'
+        required: true
+        type: string
+      deployment_name:
+        description: 'deployment_name'
+        required: true
+        type: string
+      action:
+        description: 'action'
+        required: true
+        type: string
+
   push:
     branches: [ "main" ]
   pull_request:
