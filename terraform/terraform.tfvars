@@ -1,1 +1,1 @@
-bucket_name = "yetanother-bucketname-2332423"
+bucket_name = "another-s3-deploy-destroy-test-mario2343"
