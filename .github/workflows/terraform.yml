@@ -106,6 +106,25 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+
+    - name: Restore Terraform State
+      if: github.event_name == 'workflow_dispatch'
+      continue-on-error: true
+      env:
+        GH_TOKEN: ${{ github.token }}
+      working-directory: ${{ github.workspace }}
+      run: |
+        ARTIFACT_NAME="terraform-state-${{ inputs.deployment_id }}"
+        ARTIFACT_ID=$(gh api "repos/${{ github.repository }}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=1" --jq '.artifacts[0].id // empty' 2>/dev/null || true)
+        if [ -n "$ARTIFACT_ID" ]; then
+          echo "Restoring state from artifact ${ARTIFACT_ID}"
+          gh api "repos/${{ github.repository }}/actions/artifacts/${ARTIFACT_ID}/zip" > /tmp/state.zip
+          unzip -o /tmp/state.zip -d terraform/
+          rm /tmp/state.zip
+          echo "Terraform state restored"
+        else
+          echo "No previous state found"
+        fi
     # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v1
@@ -137,14 +156,9 @@ jobs:
 
     - name: Save Terraform State
       if: always() && github.event_name == 'workflow_dispatch'
-      working-directory: ${{ github.workspace }}
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git pull --rebase origin main || true
-        if [ -f terraform/terraform.tfstate ]; then
-          git add -f terraform/terraform.tfstate
-        else
-          git rm -f terraform/terraform.tfstate 2>/dev/null || true
-        fi
-        git diff --cached --quiet || (git commit -m "Update terraform state [skip ci]" && git push)
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-state-${{ inputs.deployment_id }}
+        path: terraform/terraform.tfstate
+        if-no-files-found: ignore
+        overwrite: true
