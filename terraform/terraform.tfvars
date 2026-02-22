@@ -1,1 +1,1 @@
-bucket_name = "yetanother-bucketname-2332423"
+bucket_name = "testing-s3-terraform-rollback-mario-1234"
