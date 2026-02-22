@@ -77,8 +77,7 @@ on:
   pull_request:
 
 permissions:
-  contents: read
-
+  contents: write
 jobs:
   terraform:
     name: 'Terraform'
@@ -128,3 +127,18 @@ jobs:
     - name: Terraform Destroy
       if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
       run: terraform destroy -auto-approve -input=false
+
+
+    - name: Save Terraform State
+      if: always() && github.event_name == 'workflow_dispatch'
+      working-directory: ${{ github.workspace }}
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git pull --rebase origin main || true
+        if [ -f terraform/terraform.tfstate ]; then
+          git add -f terraform/terraform.tfstate
+        else
+          git rm -f terraform/terraform.tfstate 2>/dev/null || true
+        fi
+        git diff --cached --quiet || (git commit -m "Update terraform state [skip ci]" && git push)
