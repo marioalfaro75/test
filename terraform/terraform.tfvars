@@ -1,2 +1,2 @@
-resource_group_name = "marios-resource-groupname1"
-storage_account_name = "marios-storacct-name1"
+resource_group_name = "marioresgrpname"
+storage_account_name = "mariostoraccount1"
