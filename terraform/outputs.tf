@@ -1,34 +1,41 @@
-output "bucket_name" {
-  description = "The name of the GCS bucket"
-  value       = google_storage_bucket.bucket.name
+output "storage_account_id" {
+  description = "The ID of the storage account"
+  value       = azurerm_storage_account.this.id
 }
 
-output "bucket_url" {
-  description = "The gs:// URL of the bucket"
-  value       = google_storage_bucket.bucket.url
+output "storage_account_name" {
+  description = "The name of the storage account"
+  value       = azurerm_storage_account.this.name
 }
 
-output "bucket_self_link" {
-  description = "The self link of the bucket"
-  value       = google_storage_bucket.bucket.self_link
+output "primary_blob_endpoint" {
+  description = "The primary blob endpoint"
+  value       = azurerm_storage_account.this.primary_blob_endpoint
 }
 
-output "bucket_location" {
-  description = "The location of the bucket"
-  value       = google_storage_bucket.bucket.location
+output "primary_access_key" {
+  description = "The primary access key for the storage account"
+  value       = azurerm_storage_account.this.primary_access_key
+  sensitive   = true
 }
 
-output "bucket_storage_class" {
-  description = "The storage class of the bucket"
-  value       = google_storage_bucket.bucket.storage_class
+output "primary_connection_string" {
+  description = "The primary connection string for the storage account"
+  value       = azurerm_storage_account.this.primary_connection_string
+  sensitive   = true
 }
 
-output "bucket_uniform_access" {
-  description = "Whether uniform bucket-level access is enabled"
-  value       = google_storage_bucket.bucket.uniform_bucket_level_access
+output "container_ids" {
+  description = "Map of container names to their IDs"
+  value       = { for k, v in azurerm_storage_container.containers : k => v.id }
 }
 
-output "bucket_versioning" {
-  description = "Whether object versioning is enabled"
-  value       = google_storage_bucket.bucket.versioning[0].enabled
+output "file_share_ids" {
+  description = "Map of file share names to their IDs"
+  value       = { for k, v in azurerm_storage_share.shares : k => v.id }
+}
+
+output "resource_group_name" {
+  description = "The name of the resource group"
+  value       = azurerm_resource_group.this.name
 }

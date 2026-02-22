@@ -1,2 +1,2 @@
-project_id = "leafy-summer-317305"
-bucket_name = "test-bucket-for-mario-23434"
+resource_group_name = "test-storage-group-name"
+storage_account_name = "mario-storage-account-name-2341"
