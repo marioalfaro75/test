@@ -1,123 +1,83 @@
-variable "resource_group_name" {
-  description = "Name of the resource group to create"
+variable "region" {
+  description = "AWS region to deploy resources"
   type        = string
+  default     = "us-east-1"
 }
 
-variable "location" {
-  description = "Azure region for all resources"
+variable "bucket_name" {
+  description = "Name of the S3 bucket (must be globally unique)"
   type        = string
-  default     = "eastus2"
-}
 
-variable "storage_account_name" {
-  description = "Name of the storage account (must be globally unique, 3-24 chars, lowercase alphanumeric)"
-  type        = string
-}
-
-variable "account_tier" {
-  description = "Performance tier (Standard or Premium)"
-  type        = string
-  default     = "Standard"
-}
-
-variable "replication_type" {
-  description = "Replication type (LRS, GRS, RAGRS, ZRS, GZRS, RAGZRS)"
-  type        = string
-  default     = "LRS"
-}
-
-variable "account_kind" {
-  description = "Kind of storage account (StorageV2, BlobStorage, Storage)"
-  type        = string
-  default     = "StorageV2"
-}
-
-variable "access_tier" {
-  description = "Access tier for blob storage (Hot or Cool)"
-  type        = string
-  default     = "Hot"
-}
-
-variable "min_tls_version" {
-  description = "Minimum TLS version"
-  type        = string
-  default     = "TLS1_2"
-}
-
-variable "allow_public_access" {
-  description = "Whether to allow public access to blobs"
-  type        = bool
-  default     = false
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.bucket_name))
+    error_message = "bucket_name must be 3-63 characters, lowercase letters, numbers, hyphens, and periods only."
+  }
 }
 
 variable "enable_versioning" {
-  description = "Whether to enable blob versioning"
+  description = "Enable versioning on the S3 bucket"
   type        = bool
   default     = true
 }
 
-variable "enable_soft_delete" {
-  description = "Whether to enable soft delete for blobs and containers"
-  type        = bool
-  default     = true
-}
-
-variable "soft_delete_retention_days" {
-  description = "Number of days to retain soft-deleted blobs"
-  type        = number
-  default     = 7
-}
-
-variable "enable_network_rules" {
-  description = "Whether to enable network rules"
+variable "force_destroy" {
+  description = "Allow the bucket to be destroyed even if it contains objects"
   type        = bool
   default     = false
 }
 
-variable "default_network_action" {
-  description = "Default network action (Allow or Deny)"
+variable "block_public_access" {
+  description = "Block all public access to the bucket"
+  type        = bool
+  default     = true
+}
+
+variable "kms_key_arn" {
+  description = "ARN of a KMS key for server-side encryption. Leave empty for AES256."
   type        = string
-  default     = "Deny"
+  default     = ""
 }
 
-variable "network_bypass" {
-  description = "Services to bypass network rules"
-  type        = list(string)
-  default     = ["AzureServices"]
-}
-
-variable "allowed_ip_ranges" {
-  description = "List of IP ranges allowed to access the storage account"
-  type        = list(string)
-  default     = []
-}
-
-variable "allowed_subnet_ids" {
-  description = "List of subnet IDs allowed to access the storage account"
-  type        = list(string)
-  default     = []
-}
-
-variable "containers" {
-  description = "List of blob containers to create"
+variable "lifecycle_rules" {
+  description = "List of lifecycle rules for the bucket"
   type = list(object({
-    name        = string
-    access_type = string
+    id                                  = string
+    enabled                             = bool
+    prefix                              = string
+    transition_days                     = number
+    transition_storage_class            = string
+    expiration_days                     = number
+    noncurrent_version_expiration_days  = number
   }))
   default = []
 }
 
-variable "file_shares" {
-  description = "List of file shares to create"
+variable "logging_target_bucket" {
+  description = "S3 bucket for access logs. Leave empty to disable."
+  type        = string
+  default     = ""
+}
+
+variable "logging_target_prefix" {
+  description = "Prefix for access log objects"
+  type        = string
+  default     = "logs/"
+}
+
+variable "cors_rules" {
+  description = "List of CORS rules"
   type = list(object({
-    name     = string
-    quota_gb = number
+    allowed_headers = list(string)
+    allowed_methods = list(string)
+    allowed_origins = list(string)
+    expose_headers  = list(string)
+    max_age_seconds = number
   }))
   default = []
 }
 
 variable "tags" {
-  description = "Tags to apply to all resources"
+  description = "Additional tags to apply to all resources"
   type        = map(string)
   default     = {}
 }
