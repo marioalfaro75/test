@@ -1,34 +1,24 @@
-output "bucket_name" {
-  description = "The name of the GCS bucket"
-  value       = google_storage_bucket.bucket.name
+output "bucket_id" {
+  description = "ID of the S3 bucket"
+  value       = aws_s3_bucket.main.id
 }
 
-output "bucket_url" {
-  description = "The gs:// URL of the bucket"
-  value       = google_storage_bucket.bucket.url
+output "bucket_arn" {
+  description = "ARN of the S3 bucket"
+  value       = aws_s3_bucket.main.arn
 }
 
-output "bucket_self_link" {
-  description = "The self link of the bucket"
-  value       = google_storage_bucket.bucket.self_link
+output "bucket_domain_name" {
+  description = "Domain name of the S3 bucket"
+  value       = aws_s3_bucket.main.bucket_domain_name
 }
 
-output "bucket_location" {
-  description = "The location of the bucket"
-  value       = google_storage_bucket.bucket.location
+output "bucket_regional_domain_name" {
+  description = "Regional domain name of the S3 bucket"
+  value       = aws_s3_bucket.main.bucket_regional_domain_name
 }
 
-output "bucket_storage_class" {
-  description = "The storage class of the bucket"
-  value       = google_storage_bucket.bucket.storage_class
-}
-
-output "bucket_uniform_access" {
-  description = "Whether uniform bucket-level access is enabled"
-  value       = google_storage_bucket.bucket.uniform_bucket_level_access
-}
-
-output "bucket_versioning" {
-  description = "Whether object versioning is enabled"
-  value       = google_storage_bucket.bucket.versioning[0].enabled
+output "bucket_region" {
+  description = "AWS region of the S3 bucket"
+  value       = aws_s3_bucket.main.region
 }

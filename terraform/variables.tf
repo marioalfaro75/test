@@ -1,155 +1,83 @@
-variable "project_id" {
-  description = "The GCP project ID"
-  type        = string
-}
-
 variable "region" {
-  description = "The GCP region for resources"
+  description = "AWS region to deploy resources"
   type        = string
-  default     = "us-central1"
+  default     = "us-east-1"
 }
 
 variable "bucket_name" {
-  description = "Globally unique name for the GCS bucket"
+  description = "Name of the S3 bucket (must be globally unique)"
   type        = string
-}
-
-variable "location" {
-  description = "Location for the bucket (region, dual-region, or multi-region)"
-  type        = string
-  default     = "US"
-}
-
-variable "storage_class" {
-  description = "Storage class: STANDARD, NEARLINE, COLDLINE, ARCHIVE"
-  type        = string
-  default     = "STANDARD"
 
   validation {
-    condition     = contains(["STANDARD", "NEARLINE", "COLDLINE", "ARCHIVE"], var.storage_class)
-    error_message = "Storage class must be STANDARD, NEARLINE, COLDLINE, or ARCHIVE."
+    condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.bucket_name))
+    error_message = "bucket_name must be 3-63 characters, lowercase letters, numbers, hyphens, and periods only."
   }
 }
 
-variable "uniform_bucket_level_access" {
-  description = "Whether to enable uniform bucket-level access"
+variable "enable_versioning" {
+  description = "Enable versioning on the S3 bucket"
   type        = bool
   default     = true
 }
 
 variable "force_destroy" {
-  description = "Whether to allow bucket deletion even if it contains objects"
+  description = "Allow the bucket to be destroyed even if it contains objects"
   type        = bool
   default     = false
 }
 
-variable "public_access_prevention" {
-  description = "Public access prevention setting (inherited or enforced)"
-  type        = string
-  default     = "enforced"
-}
-
-variable "enable_versioning" {
-  description = "Whether to enable object versioning"
+variable "block_public_access" {
+  description = "Block all public access to the bucket"
   type        = bool
   default     = true
 }
 
+variable "kms_key_arn" {
+  description = "ARN of a KMS key for server-side encryption. Leave empty for AES256."
+  type        = string
+  default     = ""
+}
+
 variable "lifecycle_rules" {
-  description = "Lifecycle rules for objects in the bucket"
+  description = "List of lifecycle rules for the bucket"
   type = list(object({
-    action_type           = string
-    storage_class         = optional(string)
-    age                   = optional(number)
-    num_newer_versions    = optional(number)
-    with_state            = optional(string)
-    matches_storage_class = optional(list(string))
-  }))
-  default = [
-    {
-      action_type        = "Delete"
-      age                = 365
-      num_newer_versions = null
-      with_state         = "ARCHIVED"
-    },
-    {
-      action_type    = "SetStorageClass"
-      storage_class  = "NEARLINE"
-      age            = 30
-    }
-  ]
-}
-
-variable "cors_config" {
-  description = "CORS configuration for the bucket"
-  type = object({
-    origins          = list(string)
-    methods          = list(string)
-    response_headers = list(string)
-    max_age_seconds  = number
-  })
-  default = null
-}
-
-variable "kms_key_name" {
-  description = "Cloud KMS key name for default bucket encryption"
-  type        = string
-  default     = null
-}
-
-variable "log_bucket" {
-  description = "GCS bucket name for access logs"
-  type        = string
-  default     = null
-}
-
-variable "log_object_prefix" {
-  description = "Prefix for access log objects"
-  type        = string
-  default     = "access-logs/"
-}
-
-variable "retention_period_seconds" {
-  description = "Minimum retention period for objects in seconds"
-  type        = number
-  default     = null
-}
-
-variable "retention_policy_locked" {
-  description = "Whether the retention policy is locked"
-  type        = bool
-  default     = false
-}
-
-variable "iam_members" {
-  description = "IAM members to grant access to the bucket"
-  type = list(object({
-    role   = string
-    member = string
+    id                                  = string
+    enabled                             = bool
+    prefix                              = string
+    transition_days                     = number
+    transition_storage_class            = string
+    expiration_days                     = number
+    noncurrent_version_expiration_days  = number
   }))
   default = []
 }
 
-variable "notification_topic" {
-  description = "Pub/Sub topic for bucket notifications"
+variable "logging_target_bucket" {
+  description = "S3 bucket for access logs. Leave empty to disable."
   type        = string
-  default     = null
+  default     = ""
 }
 
-variable "notification_event_types" {
-  description = "Event types to trigger notifications"
-  type        = list(string)
-  default     = ["OBJECT_FINALIZE", "OBJECT_DELETE"]
-}
-
-variable "notification_object_prefix" {
-  description = "Object prefix filter for notifications"
+variable "logging_target_prefix" {
+  description = "Prefix for access log objects"
   type        = string
-  default     = null
+  default     = "logs/"
 }
 
-variable "labels" {
-  description = "Labels to apply to the bucket"
+variable "cors_rules" {
+  description = "List of CORS rules"
+  type = list(object({
+    allowed_headers = list(string)
+    allowed_methods = list(string)
+    allowed_origins = list(string)
+    expose_headers  = list(string)
+    max_age_seconds = number
+  }))
+  default = []
+}
+
+variable "tags" {
+  description = "Additional tags to apply to all resources"
   type        = map(string)
   default     = {}
 }
