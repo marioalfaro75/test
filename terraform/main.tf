@@ -2,87 +2,115 @@ terraform {
   required_version = ">= 1.5"
 
   required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
   }
 }
 
-provider "azurerm" {
-  features {}
+provider "aws" {
+  region = var.region
 }
 
-resource "azurerm_resource_group" "this" {
-  name     = var.resource_group_name
-  location = var.location
-  tags     = merge(var.tags, { ManagedBy = "terraform" })
+resource "aws_s3_bucket" "main" {
+  bucket        = var.bucket_name
+  force_destroy = var.force_destroy
+
+  tags = merge(var.tags, {
+    Name      = var.bucket_name
+    ManagedBy = "terraform"
+  })
 }
 
-resource "azurerm_storage_account" "this" {
-  name                            = var.storage_account_name
-  resource_group_name             = azurerm_resource_group.this.name
-  location                        = azurerm_resource_group.this.location
-  account_tier                    = var.account_tier
-  account_replication_type        = var.replication_type
-  account_kind                    = var.account_kind
-  access_tier                     = var.access_tier
-  https_traffic_only_enabled      = true
-  min_tls_version                 = var.min_tls_version
-  allow_nested_items_to_be_public = var.allow_public_access
-  tags                            = merge(var.tags, { ManagedBy = "terraform" })
+resource "aws_s3_bucket_versioning" "main" {
+  bucket = aws_s3_bucket.main.id
 
-  dynamic "blob_properties" {
-    for_each = var.enable_versioning || var.enable_soft_delete ? [1] : []
+  versioning_configuration {
+    status = var.enable_versioning ? "Enabled" : "Suspended"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
+  bucket = aws_s3_bucket.main.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = var.kms_key_arn != "" ? "aws:kms" : "AES256"
+      kms_master_key_id = var.kms_key_arn != "" ? var.kms_key_arn : null
+    }
+    bucket_key_enabled = var.kms_key_arn != "" ? true : false
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "main" {
+  bucket = aws_s3_bucket.main.id
+
+  block_public_acls       = var.block_public_access
+  block_public_policy     = var.block_public_access
+  ignore_public_acls      = var.block_public_access
+  restrict_public_buckets = var.block_public_access
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "main" {
+  count  = length(var.lifecycle_rules) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+
+  dynamic "rule" {
+    for_each = var.lifecycle_rules
     content {
-      versioning_enabled = var.enable_versioning
+      id     = rule.value.id
+      status = rule.value.enabled ? "Enabled" : "Disabled"
 
-      dynamic "delete_retention_policy" {
-        for_each = var.enable_soft_delete ? [1] : []
+      filter {
+        prefix = rule.value.prefix
+      }
+
+      dynamic "transition" {
+        for_each = rule.value.transition_days > 0 ? [1] : []
         content {
-          days = var.soft_delete_retention_days
+          days          = rule.value.transition_days
+          storage_class = rule.value.transition_storage_class
         }
       }
 
-      dynamic "container_delete_retention_policy" {
-        for_each = var.enable_soft_delete ? [1] : []
+      dynamic "expiration" {
+        for_each = rule.value.expiration_days > 0 ? [1] : []
         content {
-          days = var.soft_delete_retention_days
+          days = rule.value.expiration_days
+        }
+      }
+
+      dynamic "noncurrent_version_expiration" {
+        for_each = rule.value.noncurrent_version_expiration_days > 0 ? [1] : []
+        content {
+          noncurrent_days = rule.value.noncurrent_version_expiration_days
         }
       }
     }
   }
+}
 
-  dynamic "network_rules" {
-    for_each = var.enable_network_rules ? [1] : []
+resource "aws_s3_bucket_logging" "main" {
+  count  = var.logging_target_bucket != "" ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+
+  target_bucket = var.logging_target_bucket
+  target_prefix = var.logging_target_prefix
+}
+
+resource "aws_s3_bucket_cors_configuration" "main" {
+  count  = length(var.cors_rules) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+
+  dynamic "cors_rule" {
+    for_each = var.cors_rules
     content {
-      default_action             = var.default_network_action
-      bypass                     = var.network_bypass
-      ip_rules                   = var.allowed_ip_ranges
-      virtual_network_subnet_ids = var.allowed_subnet_ids
+      allowed_headers = cors_rule.value.allowed_headers
+      allowed_methods = cors_rule.value.allowed_methods
+      allowed_origins = cors_rule.value.allowed_origins
+      expose_headers  = cors_rule.value.expose_headers
+      max_age_seconds = cors_rule.value.max_age_seconds
     }
   }
-}
-
-resource "azurerm_storage_container" "containers" {
-  for_each = { for c in var.containers : c.name => c }
-
-  name                  = each.value.name
-  storage_account_name  = azurerm_storage_account.this.name
-  container_access_type = each.value.access_type
-}
-
-resource "azurerm_storage_share" "shares" {
-  for_each = { for s in var.file_shares : s.name => s }
-
-  name                 = each.value.name
-  storage_account_name = azurerm_storage_account.this.name
-  quota                = each.value.quota_gb
-}
-
-resource "azurerm_management_lock" "this" {
-  count      = var.lock != null ? 1 : 0
-  name       = coalesce(var.lock.name, "${var.storage_account_name}-lock")
-  scope      = azurerm_storage_account.this.id
-  lock_level = var.lock.kind
 }
